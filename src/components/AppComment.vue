@@ -10,7 +10,16 @@
 <script>
 export default {
   name: "AppComment",
-  props: ['email', 'body']
+  props: {
+    email: {
+      type: String,
+      required: true
+    },
+    body: {
+      type: String,
+      required: true
+    }
+  }
 }
 </script>
 

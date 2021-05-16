@@ -22,7 +22,15 @@
 <script>
 export default {
   name: "AppForm",
-  emits: ['addBlock'],
+  emits: {
+    'submit-form'(type, text) {
+      if (type && text) {
+        return true
+      }
+      console.warn('No data in submit-form emit')
+      return false
+    }
+  },
   data() {
     return {
       blockType: 'title',
@@ -30,14 +38,14 @@ export default {
     }
   },
   methods: {
-    buttonClickHandler() {
-      this.$emit('addBlock', this.blockType, this.text)
+    buttonClickHandler() { // обработчик клика по кнопке добавить
+      this.$emit('submit-form', this.blockType, this.text)
       this.blockType = 'title'
       this.text = ''
     }
   },
   computed: {
-    validTextLength() {
+    validTextLength() { // блокировка кнопки добавить если значение textarea меньше 3х символов
       return this.text.length >= 3
     }
   },

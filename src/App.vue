@@ -1,10 +1,10 @@
 <template>
   <div class="container column">
-    <app-form @addBlock="addBlock"></app-form>
+    <app-form @submit-form="addBlock"></app-form>
 
     <div class="card card-w70">
-      <app-block v-for="block in blocks" :type="block.type" :text="block.text"></app-block>
-      <h3 v-if="!blocks.length">Добавьте первый блок, чтобы увидеть результат</h3>
+      <component v-for="block in blocks" :is="`app-${block.type}`" :text="block.text"></component>
+      <h3 v-if="!blocks.length && !blockLoading">Добавьте первый блок, чтобы увидеть результат</h3>
     </div>
   </div>
 
@@ -24,30 +24,50 @@
 </template>
 
 <script>
-import AppBlock from "@/components/AppBlock";
+import AppTitle from "@/components/AppTitle";
+import AppAvatar from "@/components/AppAvatar";
+import AppSubtitle from "@/components/AppSubtitle";
+import AppText from "@/components/AppText";
 import AppForm from "@/components/AppForm";
 import AppComment from "@/components/AppComment";
 
 export default {
   data() {
     return {
-      url: 'https://jsonplaceholder.typicode.com/comments?_limit=42',
+      getUrl: 'https://jsonplaceholder.typicode.com/comments?_limit=42',
+      postUrl: 'https://vue-course-work2-default-rtdb.firebaseio.com/blocks.json',
       blocks: [],
       comments: [],
-      loading: false
+      loading: false,
+      blockLoading: true,
     }
   },
+  mounted() {
+    this.loadBlocks()
+  },
   methods: {
-    addBlock(type, text) {
-      this.blocks.push({
+    async addBlock(type, text) { // добавление блока в разметку и загрузка в базу данных firebase
+      const block = {
         type,
         text
-      })
+      }
+      try {
+        await fetch(this.postUrl, {
+          method: 'POST',
+          body: JSON.stringify(block),
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+        this.blocks.push(block)
+      } catch (error) {
+        console.error('Ошибка:', error);
+      }
     },
-    async loadComments() {
+    async loadComments() { // загрузка комментариев
       this.loading = true
       try {
-        const res = await fetch(this.url, {
+        const res = await fetch(this.getUrl, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json'
@@ -55,16 +75,41 @@ export default {
         })
         this.comments = await res.json()
         this.loading = false
-      } catch (e) {
-        console.log(e.message)
+      } catch (error) {
+        console.error('Ошибка:', error);
         this.loading = false
+      }
+    },
+    async loadBlocks() { // загрузка из базы данных firebase ранее созданных блоков
+      try {
+        const res = await fetch(this.postUrl)
+        const data = await res.json()
+        if (!data) { // если в базе данных нет ни одной записи
+          this.blocks = []
+          this.blockLoading = false
+          return
+        }
+        this.blocks = Object.keys(data).map(key => {
+          return {
+            id: key,
+            ...data[key]
+          }
+        })
+        this.blockLoading = false
+      } catch (error) {
+        console.error('Ошибка:', error);
+        this.blocks = []
+        this.blockLoading = false
       }
     }
   },
   components: {
+    AppTitle,
     AppComment,
     AppForm,
-    AppBlock
+    AppText,
+    AppAvatar,
+    AppSubtitle
   }
 }
 </script>
